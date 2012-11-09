@@ -1,0 +1,24 @@
+{
+  "name": "Nexus-Nexus",
+  "version": "1.0.0",
+  "description": "An information repository for live-action roleplaying events using the Nexus rules system.",
+  "licenses": [{"type": "BSD"}],
+  "homepage": "http://ireneknapp.com/software/",
+  "author": {
+    "name": "Irene Knapp",
+    "url": "http://ireneknapp.com/",
+    "email": "irene.knapp@icloud.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/IreneKnapp/Nexus-Nexus.git"
+  },
+  "main": "./server/nexus.js",
+  "dependencies": {
+    "sqlite3": ">= 2.1"
+  },
+  "engine": "node >= 0.8",
+  "scripts": {
+    "install": "node scripts/install.js"
+  }
+}

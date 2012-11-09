@@ -15,3 +15,21 @@ provided for information only.
 If you do something that requires me to write a better disclaimer, I will be
 very irate.
 
+
+Installation
+============
+
+Requirements:
+* git for version-control
+* node.js and npm (included with it)
+
+To obtain sources and prepare binaries:
+
+    git clone git://github.com/IreneKnapp/Nexus-Nexus.git
+    cd Nexus-Nexus
+    git submodule update --init
+    npm install
+
+To start the daemon:
+
+    node server/nexus.js
