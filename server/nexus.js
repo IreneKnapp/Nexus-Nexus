@@ -1,24 +1,24 @@
 var http = require('http');
 var sql = require('sqlite3');
 var config = require('./config.json');
-
+var schema = require('./schema.js');
 
 var db = new sql.Database(config.database);
 
 
-function createTable(db, tableName, columns, constraints) {
-    var tableSQL = "CREATE TABLE " + tableName + " (\n";
+function createTable(db, table) {
+    var tableSQL = "CREATE TABLE " + table.name + " (\n";
     
     var items = [];
     
-    for(var i in columns) {
-        var column = columns[i];
+    for(var i in table.columns) {
+        var column = table.columns[i];
         var columnSQL = "  " + column[0] + " " + column[1];
         items.push(columnSQL);
     }
     
-    for(var i in constraints) {
-        var constraint = constraints[i];
+    for(var i in table.constraints) {
+        var constraint = table.constraints[i];
         var constraintSQL = constraint;
         items.push(constraintSQL);
     }
@@ -39,15 +39,18 @@ function createTable(db, tableName, columns, constraints) {
 
 
 db.serialize(function() {
-    createTable(db, "images", [
-        ["image_id", "blob primary key"],
-        ["name", "text"],
-        ["data", "blob"]
-    ], []);
+    schema.load();
+    
+    var tableNames = schema.getTableNames();
+    for(var i in tableNames) {
+        var tableName = tableNames[i];
+        console.log(tableName);
+    }
+    // createTable(db, table);
 });
 
 
-
+/*
 http.createServer(function(request, response) {
   reponse.writeHead(200, {'Content-Type': 'text/plain'});
   response.end('Hello World\n');
@@ -55,3 +58,4 @@ http.createServer(function(request, response) {
 
 var url = 'http://' + config.interface + ':' + config.port + '/'
 console.log('Server running at ' + url);
+*/
