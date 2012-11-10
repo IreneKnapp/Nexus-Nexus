@@ -39,7 +39,7 @@ function createTable(db, table) {
 
 
 db.serialize(function() {
-    schema.load();
+    schema.load(config.schema);
     
     var tableNames = schema.getTableNames();
     for(var i in tableNames) {

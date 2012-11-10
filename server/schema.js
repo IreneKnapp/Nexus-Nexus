@@ -264,8 +264,8 @@ function validateUUID(uuid) {
 
 
 var schema = {
-  load: function() {
-      var specification = JSON.parse(fs.readFileSync("schema.json", "utf8"));
+  load: function(filename) {
+      var specification = JSON.parse(fs.readFileSync(filename, "utf8"));
       validateSpecification(specification);
       schema.specification = specification;
   },
