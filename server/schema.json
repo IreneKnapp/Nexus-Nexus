@@ -2,6 +2,13 @@
   "id": "b1a8f23b-2c5d-4c46-8a06-3ee8c095d203",
   
   "tables": {
+    "schema": {
+      "columns": {
+        "schema_id": { "type": "uuid" }
+      },
+      "constraints": []
+    },
+    
     "category": {
       "columns": {
         "category_id": { "type": "uuid", "constraints": [
@@ -142,12 +149,11 @@
             "foreign_table": "person",
             "foreign_columns": ["person_id"] }
         ]},
-        "email": { "type": "email" }
+        "email": { "type": "email", "constraints": [
+          { "type": "primary_key" }
+        ]}
       },
-      "constraints": [
-        { "type": "primary_key",
-           "columns": ["person_id", "email"] }
-      ]
+      "constraints": []
     },
     
     "image_format": {

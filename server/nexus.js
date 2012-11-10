@@ -42,9 +42,13 @@ db.serialize(function() {
     schema.load(config.schema);
     
     var tableNames = schema.getTableNames();
+    var first = true;
     for(var i in tableNames) {
         var tableName = tableNames[i];
-        console.log(tableName);
+        var sql = schema.getCreateTableSQL(tableName);
+        if(!first) console.log("");
+        console.log(sql);
+        first = false;
     }
     // createTable(db, table);
 });
