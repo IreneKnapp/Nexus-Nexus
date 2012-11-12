@@ -15,7 +15,9 @@
   },
   "main": "./server/nexus.js",
   "dependencies": {
-    "sqlite3": ">= 2.1"
+    "amanda": ">= 0.4",
+    "sqlite3": ">= 2.1",
+    "underscore": ">= 1.4"
   },
   "engine": "node >= 0.8",
   "scripts": {

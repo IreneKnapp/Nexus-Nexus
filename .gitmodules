@@ -4,3 +4,6 @@
 [submodule "node_modules/underscore"]
 	path = node_modules/underscore
 	url = https://github.com/documentcloud/underscore.git
+[submodule "node_modules/amanda"]
+	path = node_modules/amanda
+	url = https://github.com/Baggz/Amanda.git
