@@ -1,3 +1,4 @@
+var amanda = require('amanda');
 var fs = require('fs');
 var _ = require('underscore');
 
@@ -471,9 +472,27 @@ function validateExpression(type, expression) {
 
 
 var schema = {
+    initialized: false,
+    
+    initialize: function() {
+        if(schema.initialized) return;
+        schema.initialized = true;
+        
+        schema.validator = amanda("json");
+        schema.metaschema =
+            JSON.parse(fs.readFileSync("./schemas/schema.json", "utf8"));
+    },
+    
     load: function(filename) {
+        schema.initialize();
+        
         var specification = JSON.parse(fs.readFileSync(filename, "utf8"));
-        validateSpecification(specification);
+        console.log(schema.metaschema);
+        schema.validator.validate(specification, schema.metaschema,
+        function(error) {
+            console.log(error);
+            throw "Invalid schema.";
+        });
         schema.specification = specification;
         var id = schema.specification.id;
         var sql = schema.getSelectSQL({
@@ -483,7 +502,7 @@ var schema = {
     },
     
     getID: function() {
-        return schema.id;
+        return schema.specification.id;
     },
     
     getTableNames: function() {
