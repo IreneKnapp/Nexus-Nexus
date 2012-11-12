@@ -169,12 +169,8 @@
     
     "image": {
       "columns": {
-        "image_id": { "type": "uuid", "read_only": true, "constraints": [
-          { "type": "primary_key" },
-          { "type": "foreign_key",
-            "foreign_table": "content",
-            "foreign_columns": ["content_id"] }
-        ]},
+        "content_id": { "type": "uuid", "read_only": true },
+        "created_at": { "type": "timestamp", "read_only": true },
         "width": { "type": "integer" },
         "height": { "type": "integer" },
         "format": { "type": "uuid", "constraints": [
@@ -184,7 +180,14 @@
         ]},
         "data": { "type": "blob" }
       },
-      "constraints": []
+      "constraints": [
+        { "type": "primary_key",
+          "columns": ["content_id", "created_at"] },
+        { "type": "foreign_key",
+          "columns": ["content_id", "created_at"],
+          "foreign_table": "content_version",
+          "foreign_columns": ["content_id", "created_at"] }
+      ]
     }
   }
 }

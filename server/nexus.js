@@ -1,6 +1,6 @@
 var http = require('http');
 var sql = require('sqlite3');
-var config = require('./config.json');
+var config = require('./../config/config.json');
 var schema = require('./schema.js');
 
 var db = new sql.Database(config.database);
@@ -41,6 +41,7 @@ function createTable(db, table) {
 db.serialize(function() {
     schema.load(config.schema);
     
+    /*
     var tableNames = schema.getTableNames();
     var first = true;
     for(var i in tableNames) {
@@ -50,6 +51,7 @@ db.serialize(function() {
         console.log(sql);
         first = false;
     }
+    */
     // createTable(db, table);
 });
 

@@ -369,6 +369,14 @@ function validateBoolean(boolean) {
 }
 
 
+function validateInteger(integer) {
+    if(!_.isInteger(integer)) {
+        console.log(integer);
+        throw "Integer not one.";
+    }
+}
+
+
 function validateUUID(uuid) {
     if(!_.isString(uuid)) {
         console.log(uuid);
@@ -385,11 +393,93 @@ function validateUUID(uuid) {
 }
 
 
+function validateSelect(select) {
+    if(!_.isObject(select)) {
+        console.log(select);
+        throw "Select specification not an object.";
+    }
+    
+    validateSelectCore(select.core);
+    
+    if(!_.isUndefined(select.order)) {
+        validateOrder(select.order);
+    }
+    
+    if(!_.isUndefined(select.limit)) {
+        validateLImit(select.limit);
+    }
+    
+    var unknownKeys = _.difference(_.keys(select), ['core', 'order', 'limit']);
+    if(unknownKeys.length > 0) {
+        console.log(unknownKeys);
+        throw "Unexpected keys in select specification.";
+    }
+}
+
+
+function validateSelectCore(selectCore) {
+}
+
+
+function validateOrder(order) {
+    if(!_.isArray(order)) {
+        console.log(order);
+        throw "Oder specification not an array.";
+    }
+}
+
+
+function validateLimit(limit) {
+    if(!_.isArray(limit)) {
+        limit = [limit];
+    }
+    
+    if(limit.length == 0) {
+        throw "Empty array for limit specification.";
+    }
+    
+    if(limit.length > 2) {
+        console.log(limit);
+        throw "Array longer than 2 items for limit specification.";
+    }
+    
+    validateExpression("integer", limit[0]);
+    
+    if(limit.length > 1) {
+        validateExpression("integer", limit[1]);
+    }
+}
+
+
+function validateExpression(type, expression) {
+    if(_.isArray(expression)) {
+        throw "Unimplemented.";
+    } else {
+        var head;
+        if(_.isArray(type)) head = type[0];
+        else head = type;
+        
+        if(head == "integer") {
+            validateInteger(expression);
+        } else if(head == "uuid") {
+            validateUUID(expression);
+        } else {
+            throw "Unimplemented.";
+        }
+    }
+}
+
+
 var schema = {
     load: function(filename) {
         var specification = JSON.parse(fs.readFileSync(filename, "utf8"));
         validateSpecification(specification);
         schema.specification = specification;
+        var id = schema.specification.id;
+        var sql = schema.getSelectSQL({
+        });
+        //var sql = schema.getInsertValuesSQL("schema", ["schema_id"], [[id]]);
+        console.log(sql);
     },
     
     getID: function() {
@@ -523,10 +613,37 @@ var schema = {
         return sql;
     },
     
+    getSelectSQL: function(select) {
+        validateSelect(select);
+    },
+    
     getInsertValuesSQL: function(tableName, columnNames, values) {
         var table = schema.specification.tables[tableName];
         
+        if(_.isUndefined(table)) {
+            console.log(tableName);
+            throw "No such table.";
+        }
+        
+        for(var i in columnNames) {
+            if(_.isUndefined(table.columns[columnNames[i]])) {
+                console.log(tableName);
+                console.log(columnNames[i]);
+                throw "No such column.";
+            }
+        }
+        
         sql = "INSERT INTO " + tableName + " (";
+        
+        var first = true;
+        for(var i in columnNames) {
+            if(!first) sql += ", ";
+            
+            sql += columnNames[i];
+            
+            first = false;
+        }
+        
         sql += ") VALUES ";
         
         var firstRow = true;
@@ -538,11 +655,12 @@ var schema = {
             
             var firstColumn = true;
             for(var j in rowValues) {
-                var value = values[i];
+                var value = rowValues[j];
                 var column = table.columns[columnNames[j]];
                 
                 if(!firstColumn) sql += ", ";
                 
+                validateExpression(column.type, value);
                 sql += schema.getExpressionSQL(column.type, value);
                 
                 firstColumn = false;
@@ -552,9 +670,25 @@ var schema = {
             
             firstRow = false;
         }
+        
+        sql += ";";
+        return sql;
     },
     
     getExpressionSQL: function(type, expression) {
+        if(_.isArray(expression)) {
+            throw "Unimplemented.";
+        } else {
+            var head;
+            if(_.isArray(type)) head = type[0];
+            else head = type;
+            
+            if(head == "uuid") {
+                return "x'" + expression.replace(/-/g, "") + "'";
+            } else {
+                throw "Unimplemented.";
+            }
+        }
     },
 };
 

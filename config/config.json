@@ -1,6 +1,6 @@
 {
 "database":"./nexus.db",
-"schema":"./server/schema.json",
+"schema":"./config/schema.json",
 "interface":"localhost",
 "port":8001
 }
