@@ -7,3 +7,6 @@
 [submodule "node_modules/amanda"]
 	path = node_modules/amanda
 	url = https://github.com/Baggz/Amanda.git
+[submodule "node_modules/JSV"]
+	path = node_modules/JSV
+	url = git://github.com/garycourt/JSV.git

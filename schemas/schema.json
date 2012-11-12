@@ -3,11 +3,51 @@
   "properties": {
     "id": {
       "required": true,
-      "type": "string"
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
     "tables": {
       "required": true,
-      "type": "object"
+      "type": "object",
+      "patternProperties": {
+        "^[a-z_]+$": {
+          "type": "object",
+          "properties": {
+            "columns": {
+              "type": "object",
+              "patternProperties": {
+                "^[a-z_]+$": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "enum": ["integer", ["integer"], ["maybe", "integer"],
+                               "text", ["text"], ["maybe", "text"], ["array", "text"],
+                               "blob", ["blob"], ["maybe", "blob"],
+                               "uuid", ["uuid"], ["maybe", "uuid"], ["array", "uuid"],
+                               "timestamp", ["timestamp"], ["maybe", "timestamp"],
+                               "email", ["email"], ["maybe", "email"],
+                               "password", ["password"], ["maybe", "password"]]
+                    },
+                    "constraints": {
+                    },
+                    "read_only": {
+                      "type": "boolean",
+                      "default": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "constraints": {
+              "type": "array"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   }
 }
