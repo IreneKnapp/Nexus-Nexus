@@ -4,9 +4,6 @@
 [submodule "node_modules/underscore"]
 	path = node_modules/underscore
 	url = https://github.com/documentcloud/underscore.git
-[submodule "node_modules/amanda"]
-	path = node_modules/amanda
-	url = https://github.com/Baggz/Amanda.git
-[submodule "node_modules/JSV"]
-	path = node_modules/JSV
-	url = git://github.com/garycourt/JSV.git
+[submodule "node_modules/direct-schema"]
+	path = node_modules/direct-schema
+	url = git@github.com:IreneKnapp/direct-schema.git
