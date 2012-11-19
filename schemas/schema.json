@@ -1,26 +1,33 @@
 {
+  "title": "database schema",
   "type": "object",
   "properties": {
     "id": {
+      "title": "schema id",
       "required": true,
-      "type": "string",
-      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+      "extends": { "$ref": "#/definitions/uuid" }
     },
     "tables": {
+      "title": "table specification list",
       "required": true,
       "type": "object",
       "patternProperties": {
         "^[a-z_]+$": {
+          "title": "table specification",
           "type": "object",
           "properties": {
             "columns": {
+              "title": "column specification list",
               "type": "object",
               "patternProperties": {
                 "^[a-z_]+$": {
+                  "title": "column specification",
                   "type": "object",
                   "properties": {
                     "type": {
-                      "enum": ["integer", ["integer"], ["maybe", "integer"],
+                      "title": "type specification",
+                      "enum": ["boolean", ["boolean"], ["maybe", "boolean"],
+                               "integer", ["integer"], ["maybe", "integer"],
                                "text", ["text"], ["maybe", "text"], ["array", "text"],
                                "blob", ["blob"], ["maybe", "blob"],
                                "uuid", ["uuid"], ["maybe", "uuid"], ["array", "uuid"],
@@ -29,8 +36,44 @@
                                "password", ["password"], ["maybe", "password"]]
                     },
                     "constraints": {
+                      "title": "column constraint specification list",
+                      "type": "array",
+                      "items": {
+                        "title": "column constraint specification",
+                        "type": [{
+                          "title":
+                            "primary-key column constraint specification",
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "enum": ["primary_key"]
+                            }
+                          },
+                          "additionalProperties": false
+                        }, {
+                          "title":
+                            "foreign-key column constraint specification",
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "enum": ["foreign_key"]
+                            },
+                            "foreign_table": {
+                              "type": "string"
+                            },
+                            "foreign_columns": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "additionalProperties": false
+                        }]
+                      }
                     },
                     "read_only": {
+                      "title": "column read-only field",
                       "type": "boolean",
                       "default": false
                     }
@@ -41,13 +84,67 @@
               "additionalProperties": false
             },
             "constraints": {
-              "type": "array"
+              "title": "table constraint specification list",
+              "type": "array",
+              "items": {
+                "title": "table constraint",
+                "type": [{
+                  "title":
+                    "primary-key table constraint specification",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "enum": ["primary_key"]
+                    },
+                    "columns": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }, {
+                  "title":
+                    "foreign-key table constraint specification",
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "enum": ["foreign_key"]
+                    },
+                    "columns": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "foreign_table": {
+                      "type": "string"
+                    },
+                    "foreign_columns": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }]
+              }
             }
           },
           "additionalProperties": false
         }
       },
       "additionalProperties": false
+    }
+  },
+  "definitions": {
+    "uuid": {
+      "title": "uuid",
+      "description": "A universally-unique identifier, expressed in its textual syntax.",
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     }
   }
 }
