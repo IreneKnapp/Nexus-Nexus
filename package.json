@@ -15,12 +15,13 @@
   },
   "main": "./server/nexus.js",
   "dependencies": {
-    "JSV": ">= 4.0",
+    "direct-schema": ">= 0.3.1",
     "sqlite3": ">= 2.1",
     "underscore": ">= 1.4"
   },
   "engine": "node >= 0.8",
   "scripts": {
-    "install": "node scripts/install.js"
+    "install": "node scripts/install.js",
+    "run": "node server/main.js"
   }
 }

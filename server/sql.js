@@ -2,52 +2,52 @@ var directSchema = require('direct-schema');
 var fs = require('fs');
 var _ = require('underscore');
 
+var SQL = {};
 
-var schema = {
-    initialized: false,
+SQL.initialized = false;
+
+SQL.load = function(filename) {
+    var SQL = this;
+
+    if(!SQL.initialized) {
+        SQL.initialized = true;
+        var metaschema =
+            JSON.parse(fs.readFileSync
+                ("./json-schemas/database.json-schema.json", "utf8"));
+        SQL.validator = directSchema(metaschema);
+    }
     
-    initialize: function() {
-        if(schema.initialized) return;
-        schema.initialized = true;
-        
-        schema.metaschema =
-            JSON.parse(fs.readFileSync("./schemas/schema.json", "utf8"));
-        schema.validator = directSchema(schema.metaschema);
-    },
-    
-    load: function(filename) {
-        schema.initialize();
-        
-        var specification = JSON.parse(fs.readFileSync(filename, "utf8"));
-        schema.validator(specification,
-        function(error) {
-            console.log(error);
-            throw "Invalid schema.";
-        });
-        schema.specification = specification;
-        var id = schema.specification.id;
-        var sql = schema.getSelectSQL({
-        });
-        //var sql = schema.getInsertValuesSQL("schema", ["schema_id"], [[id]]);
-        console.log(sql);
-    },
-    
+    var specification = JSON.parse(fs.readFileSync(filename, "utf8"));
+    SQL.validator(specification,
+    function(error) {
+        console.log(error);
+        throw "Invalid schema.";
+    });
+    return _.extend({
+    specification: specification,
+    }, SQL.template);
+};
+
+SQL.template = {
     getID: function() {
-        return schema.specification.id;
+        var SQL = this;
+        return SQL.specification.id;
     },
     
     getTableNames: function() {
+        var SQL = this;
         var result = [];
-        for(var name in schema.specification.tables) {
+        for(var name in SQL.specification.tables) {
             result.push(name);
         }
         return result;
     },
     
     getCreateTableSQL: function(tableName) {
-        var table = schema.specification.tables[tableName];
+        var SQL = this;
+        var table = SQL.specification.tables[tableName];
         
-        var sql = "CREATE TABLE " + tableName + " (\n";
+        var text = "CREATE TABLE " + tableName + " (\n";
         
         var items = [];
         for(var columnName in table.columns) {
@@ -154,21 +154,23 @@ var schema = {
         
         var first = true;
         for(var i in items) {
-            if(!first) sql += ",\n";
-            sql += "  " + items[i];
+            if(!first) text += ",\n";
+            text += "  " + items[i];
             first = false;
         }
         
-        sql += "\n);";
-        return sql;
+        text += "\n);";
+        return text;
     },
     
     getSelectSQL: function(select) {
+        var SQL = this;
         //validateSelect(select);
     },
     
     getInsertValuesSQL: function(tableName, columnNames, values) {
-        var table = schema.specification.tables[tableName];
+        var SQL = this;
+        var table = SQL.specification.tables[tableName];
         
         if(_.isUndefined(table)) {
             console.log(tableName);
@@ -183,49 +185,50 @@ var schema = {
             }
         }
         
-        sql = "INSERT INTO " + tableName + " (";
+        text = "INSERT INTO " + tableName + " (";
         
         var first = true;
         for(var i in columnNames) {
-            if(!first) sql += ", ";
+            if(!first) text += ", ";
             
-            sql += columnNames[i];
+            text += columnNames[i];
             
             first = false;
         }
         
-        sql += ") VALUES ";
+        text += ") VALUES ";
         
         var firstRow = true;
         for(var i in values) {
             var rowValues = values[i];
             
-            if(!firstRow) sql += ", ";
-            sql += "(";
+            if(!firstRow) text += ", ";
+            text += "(";
             
             var firstColumn = true;
             for(var j in rowValues) {
                 var value = rowValues[j];
                 var column = table.columns[columnNames[j]];
                 
-                if(!firstColumn) sql += ", ";
+                if(!firstColumn) text += ", ";
                 
                 validateExpression(column.type, value);
-                sql += schema.getExpressionSQL(column.type, value);
+                text += SQL.getExpressionSQL(column.type, value);
                 
                 firstColumn = false;
             }
             
-            sql += ")";
+            text += ")";
             
             firstRow = false;
         }
         
-        sql += ";";
-        return sql;
+        text += ";";
+        return text;
     },
     
     getExpressionSQL: function(type, expression) {
+        var SQL = this;
         if(_.isArray(expression)) {
             throw "Unimplemented.";
         } else {
@@ -242,4 +245,7 @@ var schema = {
     },
 };
 
-module.exports = schema;
+_.bindAll(SQL);
+
+module.exports = SQL;
+
