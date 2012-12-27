@@ -103,14 +103,6 @@ function matchPorts(match) {
                         if(match.directory == port.directory) {
                             found = true;
                             port.handler(match.request, match.response);
-                        } else if(port.directory) {
-                            found = true;
-                            var originalURL = URL.parse(request.url);
-                            var newURL = URL.format(_.defaults({
-                                pathname: originalURL.pathname + "/",
-                            }, originalURL));
-                            response.writeHead(301, {"Location": newURL});
-                            response.end();
                         }
                     }
                 }
