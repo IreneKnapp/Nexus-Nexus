@@ -1,0 +1,130 @@
+{
+  "id": "b1a8f23b-2c5d-4c46-8a06-3ee8c095d203",
+
+  "entity_templates": {
+    "normal": {
+      "template": null,
+      "extends": null,
+      "versioned": true,
+      "timestamped": true,
+      "unique_relation": false,
+      "hierarchy": null,
+      "key": [{
+        "name": [{
+          "type": "variable",
+          "name": "entity"
+        }, {
+          "type": "constant",
+          "value": "_id"
+        }],
+        "type": "uuid"
+      }],
+      "columns": {},
+      "relates_to": []
+    },
+    "relation": {
+      "template": "normal",
+      "unique_relation": true,
+      "key": []
+    },
+    "reference": {
+      "template": "normal",
+      "versioned": false,
+      "timestamped": false
+      "columns": {
+        "name": {
+          "type": "text",
+        },
+        "memo": {
+          "type": ["maybe", "text"],
+        }
+      }
+    },
+    "account": {
+      "template": "normal",
+      "versioned": false
+    },
+    "hierarchical": {
+      "template": "reference",
+      "hierarchy": {
+      }
+    },
+  },
+  
+  "entities": {
+    "category": {
+      "template": "hierarchical",
+    },
+    "content_type": {
+      "template": "hierarchical",
+    },
+    "content": {
+      "template": "normal",
+      "relates_to": [{
+        "entity": "content_type",
+        "purpose": null,
+        "required": true
+      }]
+    },
+    "categorization": {
+      "template": "relation",
+      "relates_to": [{
+        "entity": "content",
+        "purpose": null,
+        "required": true
+      }, {
+        "entity": "category",
+        "purpose": null,
+        "required": true
+      }]
+    },
+    "person": {
+      "template": "account",
+      "columns": {
+        "password": {
+          "type": "password"
+        },
+      },
+      "relates_to": [{
+        "entity": "email",
+        "purpose": "primary",
+        "required": false
+      }]
+    },
+    "email": {
+      "template": "account",
+      "key": [{
+        "name": "email",
+        "type": "email"
+      }],
+      "relates_to": [{
+        "entity": "person",
+        "purpose": null,
+        "required": true
+      }]
+    },
+    "image_format": {
+      "template": "reference",
+    },
+    "image": {
+      "template": "normal",
+      "extends": "content",
+      "columns": {
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "data": {
+          "type": "blob"
+        }
+      },
+      "relates_to": [{
+        "entity": "image_format",
+        "purpose": null,
+        "required": true
+      }]
+    }
+  }
+}
