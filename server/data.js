@@ -71,6 +71,10 @@ Data.template = {
             };
             var tables = {};
             
+            if(_.isUndefined(entity.columns)) {
+                entity.columns = {};
+            }
+            
             while(!_.isNull(entity.template)) {
                 var template =
                     Data.schema.entity_templates[entity.template];
@@ -78,8 +82,8 @@ Data.template = {
                 entity.template = template.template;
                 
                 if(!_.isUndefined(template.columns)) {
-                    entity.columns = _.flatten
-                        ([entity.columns, template.columns], true);
+                    entity.columns = _.defaults
+                        (entity.columns, template.columns);
                 }
                 
                 entity = _.defaults(entity, template);
@@ -122,43 +126,88 @@ Data.template = {
                 table.constraints = [];
             });
             
-            _.each(entity.columns, function(column) {
+            var columnSpecifications = {};
+            
+            _.each(entity.columns, function(column, columnName) {
+                var tableRole;
+                if(!entity.versioned) tableRole = "main";
+                else tableRole = "version";
                 
+                var subcolumnSpecifications = [];
+                var subcolumns = Data._typeToColumnSpecifications(column.type);
+                _.each(subcolumns, function(subcolumn) {
+                    subcolumn.name =
+                        Data._substituteNameSpecification(subcolumn.name, {
+                            column: columnName,
+                        });
+                    subcolumn.tableRole = tableRole;
+                    subcolumnSpecifications.push(subcolumn);
+                });
+                
+                columnSpecifications[columnName] = {
+                    semanticType: column.type,
+                    readOnly: false,
+                    subcolumns: subcolumnSpecifications,
+                };
             });
             
             if(entity.timestamped) {
-                var timestamps = {
-                    createdAt: {
-                        name: "created_at",
-                        table: "main",
-                    },
-                    modifiedAt: {
-                        name: "modified_at",
-                        table: "main",
-                    },
-                };
+                var modifiedAtTable;
+                if(entity.versioned) modifiedAtTable = "version";
+                else modifiedAtTable = "main";
                 
-                if(entity.versioned) {
-                    timestamps.modifiedAt.table = "version";
-                }
-                
-                _.each(timestamps, function(timestamp, key) {
-                    entityOutput.columns[timestamp.name] = {
-                        type: "timestamp",
-                        read_only: true,
-                        sql: {
-                            backing: [{
-                                table: tableNames[timestamp.table],
-                                column: timestamp.name,
+                _.each([{
+                    name: "created_at",
+                    tableRole: "main",
+                }, {
+                    name: "modified_at",
+                    tableRole: modifiedAtTable,
+                }], function(item) {
+                    columnSpecifications[item.name] = {
+                        semanticType: "timestamp",
+                        readOnly: true,
+                        subcolumns: [{
+                            name: [{
+                                "type": "constant",
+                                "value": item.name,
                             }],
-                        },
-                    };
-                    
-                    working[timestamp.table].columns[timestamp.name] = {
-                        type: "integer",
+                            tableRole: item.tableRole,
+                            sqlType: "integer",
+                        }],
                     };
                 });
             }
+            
+            _.each(columnSpecifications,
+                   function(columnSpecification, columnName)
+            {
+                var backing = [];
+                _.each(columnSpecification.subcolumns, function(subcolumn) {
+                    var subcolumnName =
+                        Data._finalizeNameSpecification
+                            (Data._substituteNameSpecification(subcolumn.name,
+                    {
+                        entity: entityName,
+                    }));
+                    
+                    working[subcolumn.tableRole].columns[subcolumnName] = {
+                        type: subcolumn.sqlType,
+                    };
+                    
+                    backing.push({
+                        table: tableNames[subcolumn.tableRole],
+                        column: subcolumnName,
+                    });
+                });
+                
+                entityOutput.columns[columnName] = {
+                    type: columnSpecification.semanticType,
+                    read_only: columnSpecification.readOnly,
+                    sql: {
+                        backing: backing,
+                    },
+                };
+            });
             
             _.each(working, function(table, key) {
                 if(_.isNull(table)) return;
@@ -175,7 +224,80 @@ Data.template = {
             
             Data._entities[entityName] = entityOutput;
         });
-    }
+    },
+    
+    _typeToColumnSpecifications: function(type) {
+        var Data = this;
+        
+        var constructor;
+        var parameters;
+        if(_.isString(type)) {
+            constructor = type;
+            parameters = [];
+        } else if(_.isArray(type)) {
+            constructor = type[0];
+            parameters = type.slice(1);
+        }
+        
+        var simple = {};
+        if(constructor == "integer") {
+            simple.sqlType = "integer";
+        } else if(constructor == "text") {
+            simple.sqlType = "text";
+        } else if(constructor == "blob") {
+            simple.sqlType = "blob";
+        } else if(constructor == "timestamp") {
+            simple.sqlType = "integer";
+        } else if(constructor == "boolean") {
+            simple.sqlType = "integer";
+        } else if(constructor == "password") {
+            simple.sqlType = "blob";
+        } else if(constructor == "email") {
+            simple.sqlType = "text";
+        } else if(constructor == "maybe") {
+            return Data._typeToColumnSpecifications(parameters[0]);
+        } else if(constructor == "array") {
+            return Data._typeToColumnSpecifications(parameters[0]);
+        }
+        
+        return [_.extend(simple, {
+            name: [{
+                "type": "variable",
+                "name": "column",
+            }],
+        })];
+    },
+    
+    _substituteNameSpecification: function(parts, variables) {
+        var Data = this;
+        
+        var resultParts = _.map(parts, function(part) {
+            if((part.type == "variable")
+               && !_.isUndefined(variables[part.name]))
+            {
+                return {
+                    type: "constant",
+                    value: variables[part.name],
+                };
+            } else {
+                return part;
+            }
+        });
+
+        return resultParts;
+    },
+
+    _finalizeNameSpecification: function(parts) {
+        var Data = this;
+        
+        var result = "";
+        
+        _.each(parts, function(part) {
+            if(part.type == "constant") result += part.value;
+        });
+        
+        return result;
+    },
 };
 
 _.bindAll(Data);
