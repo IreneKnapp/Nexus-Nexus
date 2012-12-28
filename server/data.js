@@ -29,120 +29,156 @@ Data.load = function(filename) {
 };
 
 Data.template = {
+    getEntities: function() {
+        var Data = this;
+        
+        if(!Data._entities) {
+            Data._computeEverything();
+        }
+        
+        return Data._entities;
+    },
+    
     getSQLSchema: function() {
         var Data = this;
         
-        if(!Data.sqlSchema) {
-            Data.sqlSchema = {};
-            
-            Data.sqlSchema.id = Data.schema.id;
-            Data.sqlSchema.tables = {
-                "schema": {
-                    "columns": {
-                        "schema_id": { "type": "uuid" }
-                    },
-                    "constraints": []
-                },
-            };
-            
-            _.each(Data.schema.entities, function(entity, entityName) {
-                var tables = {};
-                
-                while(!_.isNull(entity.template)) {
-                    var template =
-                        Data.schema.entity_templates[entity.template];
-                    
-                    entity.template = template.template;
-                    
-                    if(!_.isUndefined(template.columns)) {
-                        entity.columns = _.flatten
-                            ([entity.columns, template.columns], true);
-                    }
-                    
-                    entity = _.defaults(entity, template);
-                }
-                
-                if(entity.unique_relation) {
-                    if(entity.versioned) {
-                        throw "Unique relations cannot be versioned, but \""
-                              + entityName + "\" is.";
-                    }
-                    
-                    if(entity.timestamped) {
-                        throw "Unique relations cannot be timestamped, but \""
-                              + entityName + "\" is.";
-                    }
-                }
-                
-                var working = {
-                    main: null,
-                    version: null
-                };
-                
-                if(!entity.unique_relation) {
-                    working.main = {};
-                    
-                    if(entity.versioned) {
-                        working.version = {};
-                    }
-                } else {
-                    working.main = {};
-                }
-                
-                _.each(working, function(table) {
-                    if(_.isNull(table)) return;
-                    table.columns = {};
-                    table.constraints = [];
-                });
-                
-                _.each(entity.columns, function(column) {
-                    
-                });
-                
-                if(entity.timestamped) {
-                    var timestamps = {
-                        createdAt: {},
-                        modifiedAt: {}
-                    };
-                    
-                    _.each(timestamps, function(timestamp) {
-                        timestamp.type = "integer";
-                        timestamp.semantic_type = "timestamp";
-                        timestamp.read_only = true;
-                    });
-                    
-                    working.main.columns["created_at"] = timestamps.createdAt;
-                    
-                    if(!entity.versioned) {
-                        working.main.columns["modified_at"] =
-                            timestamps.modifiedAt;
-                    } else {
-                        working.version.columns["modified_at"] =
-                            timestamps.modifiedAt;
-                    }
-                }
-                
-                if(!_.isNull(working.main)) {
-                    tables[entityName] = working.main;
-                }
-                
-                if(!_.isNull(working.version)) {
-                    tables[entityName + "_version"] = working.version;
-                }
-                
-                _.each(tables, function(table, tableName) {
-                    if(!_.isUndefined(Data.sqlSchema.tables[tableName])) {
-                        throw "Duplicate table \"" + tableName + "\".";
-                    }
-                    Data.sqlSchema.tables[tableName] = table;
-                });
-            });
+        if(!Data._sqlSchema) {
+            Data._computeEverything();
         }
         
-        return Data.sqlSchema;
+        return Data._sqlSchema;
     },
+    
+    _computeEverything: function() {
+        var Data = this;
+
+        Data._entities = {};
+        Data._sqlSchema = {};
+        
+        Data._sqlSchema.id = Data.schema.id;
+        Data._sqlSchema.tables = {
+            "schema": {
+                "columns": {
+                    "schema_id": { "type": "uuid" }
+                },
+                "constraints": []
+            },
+        };
+        
+        _.each(Data.schema.entities, function(entity, entityName) {
+            var entityOutput = {
+                columns: {},
+            };
+            var tables = {};
+            
+            while(!_.isNull(entity.template)) {
+                var template =
+                    Data.schema.entity_templates[entity.template];
+                
+                entity.template = template.template;
+                
+                if(!_.isUndefined(template.columns)) {
+                    entity.columns = _.flatten
+                        ([entity.columns, template.columns], true);
+                }
+                
+                entity = _.defaults(entity, template);
+            }
+            
+            if(entity.unique_relation) {
+                if(entity.versioned) {
+                    throw "Unique relations cannot be versioned, but \""
+                          + entityName + "\" is.";
+                }
+                
+                if(entity.timestamped) {
+                    throw "Unique relations cannot be timestamped, but \""
+                          + entityName + "\" is.";
+                }
+            }
+            
+            var working = {
+                main: null,
+                version: null,
+            };
+            var tableNames = {
+                main: entityName,
+                version: entityName + "_version",
+            };
+            
+            if(!entity.unique_relation) {
+                working.main = {};
+                
+                if(entity.versioned) {
+                    working.version = {};
+                }
+            } else {
+                working.main = {};
+            }
+            
+            _.each(working, function(table) {
+                if(_.isNull(table)) return;
+                table.columns = {};
+                table.constraints = [];
+            });
+            
+            _.each(entity.columns, function(column) {
+                
+            });
+            
+            if(entity.timestamped) {
+                var timestamps = {
+                    createdAt: {
+                        name: "created_at",
+                        table: "main",
+                    },
+                    modifiedAt: {
+                        name: "modified_at",
+                        table: "main",
+                    },
+                };
+
+                if(entity.versioned) {
+                    timestamps.modifiedAt.table = "version";
+                }
+                
+                _.each(timestamps, function(timestamp, key) {
+                    entityOutput.columns[timestamp.name] = {
+                        type: "timestamp",
+                        read_only: true,
+                        sql: {
+                            backing: [{
+                                table: tableNames[timestamp.table],
+                                column: timestamp.name,
+                            }],
+                        },
+                    };
+                    
+                    working[timestamp.table].columns[timestamp.name] = {
+                        type: "integer",
+                    };
+                });
+            }
+            
+            _.each(working, function(table, key) {
+                if(_.isNull(table)) return;
+                var name = tableNames[key];
+                tables[name] = table;
+            });
+            
+            _.each(tables, function(table, tableName) {
+                if(!_.isUndefined(Data._sqlSchema.tables[tableName])) {
+                    throw "Duplicate table \"" + tableName + "\".";
+                }
+                Data._sqlSchema.tables[tableName] = table;
+            });
+            
+            Data._entities[entityName] = entityOutput;
+        });
+    }
 };
 
 _.bindAll(Data);
 
 module.exports = Data;
+

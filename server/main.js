@@ -1,4 +1,5 @@
 var HTTP = require("http");
+var OS = require("os");
 var URL = require("url");
 var SQLITE3 = require("sqlite3");
 var _ = require("underscore");
@@ -29,6 +30,15 @@ var ports = [{
         handler: function(request, response) {
             response.writeHead(200, {"Content-Type": "application/json"});
             response.write(staticContent.ports);
+            response.end();
+        },
+    }, {
+        path: ["entities.json"],
+        type: "endpoint",
+        directory: false,
+        handler: function(request, response) {
+            response.writeHead(200, {"Content-Type": "application/json"});
+            response.write(staticContent.entities);
             response.end();
         },
     }, {
@@ -115,24 +125,42 @@ function matchPorts(match) {
 
 
 staticContent.ports = JSON.stringify(describePorts(ports));
+staticContent.entities = JSON.stringify(dataSchema.getEntities());
 staticContent.sqlSchema = JSON.stringify(dataSchema.getSQLSchema());
 
 
-HTTP.createServer(function(request, response) {
-    var match = {
-        ports: ports,
-        request: request,
-        response: response,
-    };
-    match.path = URL.parse(request.url).pathname.split("/").slice(1);
-    match.directory = (match.path[match.path.length - 1] == "");
-    if(match.directory) match.path.pop();
-    if(!matchPorts(match)) {
-        response.writeHead(400, {});
-        response.end();
-    }
-}).listen(CONFIG.port, CONFIG.interface);
+function createServer(port, interface) {
+    HTTP.createServer(function(request, response) {
+        var match = {
+            ports: ports,
+            request: request,
+            response: response,
+        };
+        match.path = URL.parse(request.url).pathname.split("/").slice(1);
+        match.directory = (match.path[match.path.length - 1] == "");
+        if(match.directory) match.path.pop();
+        if(!matchPorts(match)) {
+            response.writeHead(400, {});
+            response.end();
+        }
+    }).listen(port, interface);
+    
+    console.log("Listening on " + interface + " port " + port + ".");
+}
 
-var url = "http://" + CONFIG.interface + ":" + CONFIG.port + "/"
-console.log("Server running at " + url);
+
+console.log("Initializing...");
+
+if(_.isNull(CONFIG.interface)) {
+    _.each(OS.networkInterfaces(), function(interfaceObjects) {
+        _.each(interfaceObjects, function(interfaceObject) {
+            if(interfaceObject.family != "IPv4") return;
+            createServer(CONFIG.port, interfaceObject.address);
+        });
+    });
+} else {
+    createServer(CONFIG.port, CONFIG.interface);
+}
+
+console.log("Initialization complete.");
 
