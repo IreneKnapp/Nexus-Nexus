@@ -137,7 +137,7 @@ Data.template = {
                         table: "main",
                     },
                 };
-
+                
                 if(entity.versioned) {
                     timestamps.modifiedAt.table = "version";
                 }

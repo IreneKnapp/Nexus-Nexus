@@ -42,6 +42,15 @@ var ports = [{
             response.end();
         },
     }, {
+        path: ["data-schema.json"],
+        type: "endpoint",
+        directory: false,
+        handler: function(request, response) {
+            response.writeHead(200, {"Content-Type": "application/json"});
+            response.write(staticContent.dataSchema);
+            response.end();
+        },
+    }, {
         path: ["sql-schema.json"],
         type: "endpoint",
         directory: false,
@@ -125,6 +134,7 @@ function matchPorts(match) {
 
 
 staticContent.ports = JSON.stringify(describePorts(ports));
+staticContent.dataSchema = JSON.stringify(dataSchema.schema);
 staticContent.entities = JSON.stringify(dataSchema.getEntities());
 staticContent.sqlSchema = JSON.stringify(dataSchema.getSQLSchema());
 
