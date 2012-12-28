@@ -1,0 +1,193 @@
+{
+  "title": "data schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "title": "schema id",
+      "required": true,
+      "extends": { "$ref": "#/definitions/uuid" }
+    },
+    "entity_templates": {
+      "title": "entity template list",
+      "required": true,
+      "type": "object",
+      "patternProperties": {
+        "^[a-z_]+$": {
+          "title": "entity template",
+          "extends": { "$ref": "#/definitions/entity" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "entities": {
+      "title": "entity list",
+      "required": true,
+      "type": "object",
+      "patternProperties": {
+        "^[a-z_]+$": {
+          "title": "entity",
+          "extends": { "$ref": "#/definitions/entity" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "uuid": {
+      "title": "uuid",
+      "description": "A universally-unique identifier, expressed in its textual syntax.",
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "type": {
+      "title": "type specification",
+      "enum": ["boolean", ["maybe", "boolean"],
+               "integer", ["maybe", "integer"],
+               "text", ["maybe", "text"], ["array", "text"],
+               "blob", ["maybe", "blob"],
+               "uuid", ["maybe", "uuid"], ["array", "uuid"],
+               "timestamp", ["maybe", "timestamp"],
+               "email", ["maybe", "email"],
+               "password", ["maybe", "password"]]
+    },
+    "entity": {
+      "type": "object",
+      "properties": {
+        "template": {
+          "title": "entity \"template\" field",
+          "type": ["null", "string"]
+        },
+        "extends": {
+          "title": "entity \"extends\" field",
+          "type": ["null", "string"]
+        },
+        "versioned": {
+          "title": "entity \"versioned\" field",
+          "type": "boolean"
+        },
+        "timestamped": {
+          "title": "entity \"timestamped\" field",
+          "type": "boolean"
+        },
+        "unique_relation": {
+          "title": "entity \"unique_relation\" field",
+          "type": "boolean"
+        },
+        "hierarchy": {
+          "title": "entity \"hierarchy\" field",
+          "type": ["null", "object"]
+        },
+        "key": {
+          "title": "key",
+          "type": "array",
+          "items": {
+            "title": "key column",
+            "type": "object",
+            "properties": {
+              "name": {
+                "title": "key column \"name\" field",
+                "required": true,
+                "type": [{
+                  "title": "key column \"name\" field simple value",
+                  "type": "string"
+                }, {
+                  "type": "array",
+                  "items": {
+                    "title": "key column \"name\" field item",
+                    "type": [{
+                      "type": "string"
+                    }, {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "title": "key column \"name\" field item type",
+                          "required": true,
+                          "type": "string",
+                          "enum": ["variable"]
+                        },
+                        "name": {
+                          "title": "key column \"name\" field variable name",
+                          "required": true,
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }, {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "title": "key column \"name\" field item type",
+                          "required": true,
+                          "type": "string",
+                          "enum": ["constant"]
+                        },
+                        "value": {
+                          "title": "key column \"name\" field constant value",
+                          "required": true,
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }]
+                  }
+                }]
+              },
+              "type": {
+                "title": "key column \"type\" field",
+                "required": true,
+                "extends": { "$ref": "#/definitions/type" }
+              }
+            }
+          }
+        },
+        "columns": {
+          "title": "entity \"columns\" field",
+          "type": "object",
+          "patternProperties": {
+            "^[a-z_]+$": {
+              "title": "column",
+              "type": "object",
+              "properties": {
+                "type": {
+                  "title": "column \"type\" field",
+                  "required": true,
+                  "extends": { "$ref": "#/definitions/type" }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "relates_to": {
+          "title": "entity \"relates_to\" field",
+          "type": "array",
+          "items": {
+            "title": "relates_to item",
+            "type": "object",
+            "properties": {
+              "entity": {
+                "title": "relates_to item \"entity\" field",
+                "required": true,
+                "type": "string"
+              },
+              "purpose": {
+                "title": "relates_to item \"purpose\" field",
+                "required": true,
+                "type": ["null", "string"]
+              },
+              "required": {
+                "title": "relates_to item \"required\" field",
+                "required": true,
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

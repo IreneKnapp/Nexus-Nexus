@@ -26,14 +26,14 @@
                   "properties": {
                     "type": {
                       "title": "type specification",
-                      "enum": ["boolean", ["boolean"], ["maybe", "boolean"],
-                               "integer", ["integer"], ["maybe", "integer"],
-                               "text", ["text"], ["maybe", "text"], ["array", "text"],
-                               "blob", ["blob"], ["maybe", "blob"],
-                               "uuid", ["uuid"], ["maybe", "uuid"], ["array", "uuid"],
-                               "timestamp", ["timestamp"], ["maybe", "timestamp"],
-                               "email", ["email"], ["maybe", "email"],
-                               "password", ["password"], ["maybe", "password"]]
+                      "required": true,
+                      "type": "string",
+                      "enum": ["integer", "text", "blob", "real", "numeric"]
+                    },
+                    "semantic_type": {
+                      "title": "semantic type specification",
+                      "required": true,
+                      "extends": { "$ref": "#/definitions/type" }
                     },
                     "constraints": {
                       "title": "column constraint specification list",
@@ -74,8 +74,8 @@
                     },
                     "read_only": {
                       "title": "column read-only field",
-                      "type": "boolean",
-                      "default": false
+                      "required": true,
+                      "type": "boolean"
                     }
                   },
                   "additionalProperties": false
@@ -145,6 +145,17 @@
       "description": "A universally-unique identifier, expressed in its textual syntax.",
       "type": "string",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "type": {
+      "title": "type specification",
+      "enum": ["boolean", ["maybe", "boolean"],
+               "integer", ["maybe", "integer"],
+               "text", ["maybe", "text"], ["array", "text"],
+               "blob", ["maybe", "blob"],
+               "uuid", ["maybe", "uuid"], ["array", "uuid"],
+               "timestamp", ["maybe", "timestamp"],
+               "email", ["maybe", "email"],
+               "password", ["maybe", "password"]]
     }
   }
 }

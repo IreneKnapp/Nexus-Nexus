@@ -4,10 +4,11 @@ var SQLITE3 = require("sqlite3");
 var _ = require("underscore");
 var CONFIG = require("./../config.json");
 var SQL = require("./sql.js");
+var DATA = require("./data.js");
 
 var db = new SQLITE3.Database(CONFIG.database);
-var sqlSchema = SQL.load("sql-schemas/nexus.sql-schema.json");
-
+var dataSchema = DATA.load("data-schemas/nexus.data-schema.json");
+//var sqlSchema = SQL.load("sql-schemas/nexus.sql-schema.json");
 
 /*
 SQLITE3.serialize(function() {
@@ -114,7 +115,7 @@ function matchPorts(match) {
 
 
 staticContent.ports = JSON.stringify(describePorts(ports));
-staticContent.sqlSchema = JSON.stringify(sqlSchema.specification);
+staticContent.sqlSchema = JSON.stringify(dataSchema.getSQLSchema());
 
 
 HTTP.createServer(function(request, response) {

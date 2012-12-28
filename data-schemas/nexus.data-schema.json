@@ -24,19 +24,21 @@
     },
     "relation": {
       "template": "normal",
+      "versioned": false,
+      "timestamped": false,
       "unique_relation": true,
       "key": []
     },
     "reference": {
       "template": "normal",
       "versioned": false,
-      "timestamped": false
+      "timestamped": false,
       "columns": {
         "name": {
-          "type": "text",
+          "type": "text"
         },
         "memo": {
-          "type": ["maybe", "text"],
+          "type": ["maybe", "text"]
         }
       }
     },
@@ -48,15 +50,16 @@
       "template": "reference",
       "hierarchy": {
       }
-    },
+    }
   },
   
   "entities": {
     "category": {
       "template": "hierarchical",
+      "versioned": true
     },
     "content_type": {
-      "template": "hierarchical",
+      "template": "hierarchical"
     },
     "content": {
       "template": "normal",
@@ -83,7 +86,7 @@
       "columns": {
         "password": {
           "type": "password"
-        },
+        }
       },
       "relates_to": [{
         "entity": "email",
@@ -104,7 +107,7 @@
       }]
     },
     "image_format": {
-      "template": "reference",
+      "template": "reference"
     },
     "image": {
       "template": "normal",

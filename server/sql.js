@@ -1,5 +1,5 @@
-var directSchema = require('direct-schema');
-var fs = require('fs');
+var DirectSchema = require('direct-schema');
+var FS = require('fs');
 var _ = require('underscore');
 
 var SQL = {};
@@ -12,12 +12,12 @@ SQL.load = function(filename) {
     if(!SQL.initialized) {
         SQL.initialized = true;
         var metaschema =
-            JSON.parse(fs.readFileSync
+            JSON.parse(FS.readFileSync
                 ("./json-schemas/database.json-schema.json", "utf8"));
-        SQL.validator = directSchema(metaschema);
+        SQL.validator = DirectSchema(metaschema);
     }
     
-    var specification = JSON.parse(fs.readFileSync(filename, "utf8"));
+    var specification = JSON.parse(FS.readFileSync(filename, "utf8"));
     SQL.validator(specification,
     function(error) {
         console.log(error);
