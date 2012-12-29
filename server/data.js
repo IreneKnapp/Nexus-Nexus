@@ -57,19 +57,24 @@ Data.template = {
         
         Data._sqlSchema.id = Data.schema.id;
         Data._sqlSchema.tables = {
-            "schema": {
-                "columns": {
-                    "schema_id": { "type": "uuid" }
+            schema: {
+                columns: {
+                    schema_id: { type: "uuid" }
                 },
-                "constraints": []
+                constraints: []
             },
         };
         
         _.each(Data.schema.entities, function(entity, entityName) {
             var entityOutput = {
+                key: [],
                 columns: [],
             };
             var tables = {};
+            
+            if(_.isUndefined(entity.recursiveExtends)) {
+                entity.recursiveExtends = [];
+            }
             
             if(_.isUndefined(entity.columns)) {
                 entity.columns = [];
@@ -80,6 +85,12 @@ Data.template = {
                     Data.schema.entity_templates[entity.template];
                 
                 entity.template = template.template;
+                
+                if(!_.isUndefined(template["extends"])) {
+                    entity.recursiveExtends =
+                        _.flatten([template["extends"],
+                                   entity["extends"]], true);
+                }
                 
                 if(!_.isUndefined(template.columns)) {
                     entity.columns =
@@ -100,6 +111,8 @@ Data.template = {
                           + entityName + "\" is.";
                 }
             }
+            
+            entityOutput.immediateExtends = entity["extends"];
             
             var working = {
                 main: null,
@@ -128,7 +141,7 @@ Data.template = {
             
             var preColumnSpecifications = [];
             
-            _.each(entity.key, function(keyColumn) {
+            _.each(entity.key, function(keyColumn, keyIndex) {
                 var keyColumnName =
                     Data._finalizeNameSpecification
                         (Data._substituteNameSpecification(keyColumn.name,
@@ -148,7 +161,11 @@ Data.template = {
                     type: keyColumn.type,
                     tableRoles: tableRoles,
                     readOnly: true,
+                    order: 0,
+                    keyIndex: keyIndex,
                 });
+                
+                entityOutput.key.push(keyColumnName);
             });
             
             _.each(entity.columns, function(column) {
@@ -161,6 +178,8 @@ Data.template = {
                     type: column.type,
                     tableRoles: [tableRole],
                     readOnly: false,
+                    order: 2,
+                    keyIndex: null,
                 });
             });
             
@@ -182,6 +201,8 @@ Data.template = {
                     name: column.name,
                     semanticType: column.type,
                     readOnly: column.readOnly,
+                    order: column.order,
+                    keyIndex: column.keyIndex,
                     subcolumns: subcolumnSpecifications,
                 });
             });
@@ -202,6 +223,8 @@ Data.template = {
                         name: item.name,
                         semanticType: "timestamp",
                         readOnly: true,
+                        order: 1,
+                        keyIndex: null,
                         subcolumns: [{
                             name: [{
                                 "type": "constant",
@@ -231,22 +254,22 @@ Data.template = {
                         });
                     });
                     
-                    var backingTables =
-                        _.map(subcolumn.tableRoles, function(tableRole)
-                    {
-                        return tableNames[tableRole];
+                    var backingColumn = {};
+                    
+                    _.each(subcolumn.tableRoles, function(tableRole) {
+                        backingColumn[tableNames[tableRole]] = subcolumnName;
                     });
                     
-                    backing.push({
-                        tables: backingTables,
-                        column: subcolumnName,
-                    });
+                    backing.push(backingColumn);
                 });
                 
                 entityOutput.columns.push({
                     name: columnSpecification.name,
+                    allNames: [columnSpecification.name],
                     type: columnSpecification.semanticType,
-                    read_only: columnSpecification.readOnly,
+                    readOnly: columnSpecification.readOnly,
+                    order: columnSpecification.order,
+                    keyIndex: columnSpecification.keyIndex,
                     sql: {
                         backing: backing,
                     },
@@ -267,6 +290,127 @@ Data.template = {
             });
             
             Data._entities[entityName] = entityOutput;
+        });
+        
+        var unsortedEntityNames = [];
+        _.each(Data._entities, function(entity, entityName) {
+            unsortedEntityNames.push(entityName);
+        });
+        
+        var sortedEntityNames = [];
+        while(unsortedEntityNames.length > 0) {
+            var anySortedThisStep = false;
+            var i = 0;
+            while(i < unsortedEntityNames.length) {
+                var entityName = unsortedEntityNames[i];
+                var entity = Data._entities[entityName];
+                
+                var canGoNext = true;
+                _.each(entity.immediateExtends, function(extendedEntityName) {
+                    if(!canGoNext) return;
+                    if(!_.contains(sortedEntityNames, extendedEntityName)) {
+                        canGoNext = false;
+                        return;
+                    }
+                });
+                
+                if(canGoNext) {
+                    sortedEntityNames.push(entityName);
+                    unsortedEntityNames =
+                        _.without(unsortedEntityNames, entityName);
+                    anySortedThisStep = true;
+                } else {
+                    i++;
+                }
+            }
+            
+            if((unsortedEntityNames.length > 0) && !anySortedThisStep) {
+                throw "Circular \"extends\" dependencies involving "
+                    + "the entity \"" + unsortedEntityNames[0] + "\".";
+            }
+        }
+        
+        _.each(Data._entities, function(entity) {
+            var recursiveExtends = Data._recursiveExtends(entity);
+            
+            entity.recursiveExtends = recursiveExtends;
+        });
+        
+        _.each(sortedEntityNames, function(entityName) {
+            var entity = Data._entities[entityName];
+            
+            var prospectiveColumns = [];
+            _.each(entity.recursiveExtends, function(extendedEntityName) {
+                var extendedEntity = Data._entities[extendedEntityName];
+                prospectiveColumns.push
+                    (Data._deepCopy(extendedEntity.columns));
+            });
+            prospectiveColumns.push(entity.columns);
+            prospectiveColumns = _.flatten(prospectiveColumns, true);
+            
+            var mergedColumns =  [];
+            _.each(prospectiveColumns, function(column) {
+                var found = false;
+                _.each(mergedColumns, function(mergedColumn) {
+                    if(found) return;
+                    
+                    var shouldMerge = false;
+                    
+                    _.each(column.allNames, function(columnName) {
+                        if(shouldMerge) return;
+                        
+                        if(_.contains(mergedColumn.allNames, columnName)) {
+                            shouldMerge = true;
+                        }
+                    });
+                    
+                    if(!shouldMerge
+                       && !_.isNull(column.keyIndex)
+                       && !_.isNull(mergedColumn.keyIndex)
+                       && (column.keyIndex == mergedColumn.keyIndex))
+                    {
+                        shouldMerge = true;
+                    }
+                    
+                    if(shouldMerge) {
+                        found = true;
+                        
+                        mergedColumn.name = column.name;
+                        
+                        mergedColumn.allNames =
+                            _.union(column.allNames, mergedColumn.allNames);
+                        
+                        var mergedBacking = [];
+                        _.each(mergedColumn.sql.backing,
+                               function(mergedItem, index)
+                        {
+                            var mergedBackingItem =
+                                _.extend({},
+                                         mergedItem,
+                                         column.sql.backing[index]);
+                            mergedBacking.push(mergedBackingItem);
+                        });
+                        mergedColumn.sql.backing = mergedBacking;
+                        
+                        mergedColumn.readOnly |= column.readOnly;
+                    }
+                });
+                
+                if(!found) mergedColumns.push(column);
+            });
+            
+            mergedColumns = _.sortBy(mergedColumns, "order");
+            
+            entity.columns = mergedColumns;
+        });
+        
+        _.each(Data._entities, function(entity) {
+            _.each(entity.columns, function(column) {
+                column.readOnly = column.readOnly ? true : false;
+                delete column.allNames;
+                delete column.order;
+                delete column.keyIndex;
+            });
         });
     },
     
@@ -317,6 +461,13 @@ Data.template = {
     _substituteNameSpecification: function(parts, variables) {
         var Data = this;
         
+        if(_.isString(parts)) {
+            parts = [{
+                type: "constant",
+                value: parts,
+            }];
+        }
+        
         var resultParts = _.map(parts, function(part) {
             if((part.type == "variable")
                && !_.isUndefined(variables[part.name]))
@@ -343,6 +494,46 @@ Data.template = {
         });
         
         return result;
+    },
+    
+    _recursiveExtends: function(entity) {
+        var Data = this;
+        
+        if(!_.isUndefined(entity.recursiveExtends)) {
+            return entity.recursiveExtends;
+        }
+        
+        var results = [];
+        _.each(entity.immediateExtends, function(extendedEntityName) {
+            var extendedEntity = Data._entities[extendedEntityName];
+            results.push(Data._recursiveExtends(extendedEntity));
+            results.push([extendedEntityName]);
+        });
+        results = _.flatten(results, true);
+        
+        entity.recursiveExtends = results;
+        
+        return results;
+    },
+    
+    _deepCopy: function(structure) {
+        var Data = this;
+        
+        if(_.isArray(structure)) {
+            var result = [];
+            _.each(structure, function(substructure) {
+                result.push(Data._deepCopy(substructure));
+            });
+            return result;
+        } else if(_.isObject(structure)) {
+            var result = {};
+            _.each(structure, function(substructure, key) {
+                result[key] = Data._deepCopy(substructure);
+            });
+            return result;
+        } else {
+            return structure;
+        }
     },
 };
 

@@ -4,10 +4,9 @@
   "entity_templates": {
     "normal": {
       "template": null,
-      "extends": null,
+      "extends": [],
       "versioned": true,
       "timestamped": true,
-      "see_through": false,
       "hierarchy": null,
       "key": [{
         "name": [{
@@ -26,7 +25,6 @@
       "template": "normal",
       "versioned": false,
       "timestamped": false,
-      "see_through": true,
       "key": []
     },
     "reference": {
@@ -114,7 +112,7 @@
     },
     "image": {
       "template": "normal",
-      "extends": "content",
+      "extends": ["content"],
       "columns": [{
         "name": "width",
         "type": "integer"

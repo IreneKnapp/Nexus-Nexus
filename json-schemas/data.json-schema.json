@@ -60,7 +60,11 @@
         },
         "extends": {
           "title": "entity \"extends\" field",
-          "type": ["null", "string"]
+          "type": "array",
+          "items": {
+            "title": "entity \"extends\" field item",
+            "type": "string"
+          }
         },
         "versioned": {
           "title": "entity \"versioned\" field",
@@ -68,10 +72,6 @@
         },
         "timestamped": {
           "title": "entity \"timestamped\" field",
-          "type": "boolean"
-        },
-        "see_through": {
-          "title": "entity \"see_through\" field",
           "type": "boolean"
         },
         "hierarchy": {
