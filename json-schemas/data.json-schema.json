@@ -70,8 +70,8 @@
           "title": "entity \"timestamped\" field",
           "type": "boolean"
         },
-        "unique_relation": {
-          "title": "entity \"unique_relation\" field",
+        "see_through": {
+          "title": "entity \"see_through\" field",
           "type": "boolean"
         },
         "hierarchy": {
@@ -180,6 +180,11 @@
               },
               "required": {
                 "title": "relates_to item \"required\" field",
+                "required": true,
+                "type": "boolean"
+              },
+              "unique": {
+                "title": "relates_to item \"unique\" field",
                 "required": true,
                 "type": "boolean"
               }

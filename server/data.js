@@ -126,13 +126,47 @@ Data.template = {
                 table.constraints = [];
             });
             
-            var columnSpecifications = [];
+            var preColumnSpecifications = [];
+            
+            _.each(entity.key, function(keyColumn) {
+                var keyColumnName =
+                    Data._finalizeNameSpecification
+                        (Data._substituteNameSpecification(keyColumn.name,
+                {
+                    entity: entityName,
+                }));
+                
+                var tableRoles = [];
+                _.each(working, function(table, tableRole) {
+                    if(_.isNull(table)) return;
+                    
+                    tableRoles.push(tableRole);
+                });
+                
+                preColumnSpecifications.push({
+                    name: keyColumnName,
+                    type: keyColumn.type,
+                    tableRoles: tableRoles,
+                    readOnly: true,
+                });
+            });
             
             _.each(entity.columns, function(column) {
                 var tableRole;
                 if(!entity.versioned) tableRole = "main";
                 else tableRole = "version";
                 
+                preColumnSpecifications.push({
+                    name: column.name,
+                    type: column.type,
+                    tableRoles: [tableRole],
+                    readOnly: false,
+                });
+            });
+            
+            var columnSpecifications = [];
+            
+            _.each(preColumnSpecifications, function(column) {
                 var subcolumnSpecifications = [];
                 var subcolumns = Data._typeToColumnSpecifications(column.type);
                 _.each(subcolumns, function(subcolumn) {
@@ -140,14 +174,14 @@ Data.template = {
                         Data._substituteNameSpecification(subcolumn.name, {
                             column: column.name,
                         });
-                    subcolumn.tableRole = tableRole;
+                    subcolumn.tableRoles = column.tableRoles;
                     subcolumnSpecifications.push(subcolumn);
                 });
                 
                 columnSpecifications.push({
                     name: column.name,
                     semanticType: column.type,
-                    readOnly: false,
+                    readOnly: column.readOnly,
                     subcolumns: subcolumnSpecifications,
                 });
             });
@@ -173,7 +207,7 @@ Data.template = {
                                 "type": "constant",
                                 "value": item.name,
                             }],
-                            tableRole: item.tableRole,
+                            tableRoles: [item.tableRole],
                             sqlType: "integer",
                         }],
                     });
@@ -190,13 +224,21 @@ Data.template = {
                         entity: entityName,
                     }));
                     
-                    working[subcolumn.tableRole].columns.push({
-                        name: subcolumnName,
-                        type: subcolumn.sqlType,
+                    _.each(subcolumn.tableRoles, function(tableRole) {
+                        working[tableRole].columns.push({
+                            name: subcolumnName,
+                            type: subcolumn.sqlType,
+                        });
+                    });
+                    
+                    var backingTables =
+                        _.map(subcolumn.tableRoles, function(tableRole)
+                    {
+                        return tableNames[tableRole];
                     });
                     
                     backing.push({
-                        table: tableNames[subcolumn.tableRole],
+                        tables: backingTables,
                         column: subcolumnName,
                     });
                 });
@@ -256,6 +298,8 @@ Data.template = {
             simple.sqlType = "blob";
         } else if(constructor == "email") {
             simple.sqlType = "text";
+        } else if(constructor == "uuid") {
+            simple.sqlType = "blob";
         } else if(constructor == "maybe") {
             return Data._typeToColumnSpecifications(parameters[0]);
         } else if(constructor == "array") {
