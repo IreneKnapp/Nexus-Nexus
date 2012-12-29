@@ -143,22 +143,23 @@
         },
         "columns": {
           "title": "entity \"columns\" field",
-          "type": "object",
-          "patternProperties": {
-            "^[a-z_]+$": {
-              "title": "column",
-              "type": "object",
-              "properties": {
-                "type": {
-                  "title": "column \"type\" field",
-                  "required": true,
-                  "extends": { "$ref": "#/definitions/type" }
-                }
+          "type": "array",
+          "item": {
+            "title": "column",
+            "properties": {
+              "name": {
+                "title": "column \"name\" field",
+                "required": true,
+                "type": "string"
               },
-              "additionalProperties": false
-            }
-          },
-          "additionalProperties": false
+              "type": {
+                "title": "column \"type\" field",
+                "required": true,
+                "extends": { "$ref": "#/definitions/type" }
+              }
+            },
+            "additionalProperties": false
+          }
         },
         "relates_to": {
           "title": "entity \"relates_to\" field",

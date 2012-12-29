@@ -67,12 +67,12 @@ Data.template = {
         
         _.each(Data.schema.entities, function(entity, entityName) {
             var entityOutput = {
-                columns: {},
+                columns: [],
             };
             var tables = {};
             
             if(_.isUndefined(entity.columns)) {
-                entity.columns = {};
+                entity.columns = [];
             }
             
             while(!_.isNull(entity.template)) {
@@ -82,8 +82,8 @@ Data.template = {
                 entity.template = template.template;
                 
                 if(!_.isUndefined(template.columns)) {
-                    entity.columns = _.defaults
-                        (entity.columns, template.columns);
+                    entity.columns =
+                        _.flatten([entity.columns, template.columns], true);
                 }
                 
                 entity = _.defaults(entity, template);
@@ -122,13 +122,13 @@ Data.template = {
             
             _.each(working, function(table) {
                 if(_.isNull(table)) return;
-                table.columns = {};
+                table.columns = [];
                 table.constraints = [];
             });
             
-            var columnSpecifications = {};
+            var columnSpecifications = [];
             
-            _.each(entity.columns, function(column, columnName) {
+            _.each(entity.columns, function(column) {
                 var tableRole;
                 if(!entity.versioned) tableRole = "main";
                 else tableRole = "version";
@@ -138,17 +138,18 @@ Data.template = {
                 _.each(subcolumns, function(subcolumn) {
                     subcolumn.name =
                         Data._substituteNameSpecification(subcolumn.name, {
-                            column: columnName,
+                            column: column.name,
                         });
                     subcolumn.tableRole = tableRole;
                     subcolumnSpecifications.push(subcolumn);
                 });
                 
-                columnSpecifications[columnName] = {
+                columnSpecifications.push({
+                    name: column.name,
                     semanticType: column.type,
                     readOnly: false,
                     subcolumns: subcolumnSpecifications,
-                };
+                });
             });
             
             if(entity.timestamped) {
@@ -163,7 +164,8 @@ Data.template = {
                     name: "modified_at",
                     tableRole: modifiedAtTable,
                 }], function(item) {
-                    columnSpecifications[item.name] = {
+                    columnSpecifications.push({
+                        name: item.name,
                         semanticType: "timestamp",
                         readOnly: true,
                         subcolumns: [{
@@ -174,13 +176,11 @@ Data.template = {
                             tableRole: item.tableRole,
                             sqlType: "integer",
                         }],
-                    };
+                    });
                 });
             }
             
-            _.each(columnSpecifications,
-                   function(columnSpecification, columnName)
-            {
+            _.each(columnSpecifications, function(columnSpecification) {
                 var backing = [];
                 _.each(columnSpecification.subcolumns, function(subcolumn) {
                     var subcolumnName =
@@ -190,9 +190,10 @@ Data.template = {
                         entity: entityName,
                     }));
                     
-                    working[subcolumn.tableRole].columns[subcolumnName] = {
+                    working[subcolumn.tableRole].columns.push({
+                        name: subcolumnName,
                         type: subcolumn.sqlType,
-                    };
+                    });
                     
                     backing.push({
                         table: tableNames[subcolumn.tableRole],
@@ -200,13 +201,14 @@ Data.template = {
                     });
                 });
                 
-                entityOutput.columns[columnName] = {
+                entityOutput.columns.push({
+                    name: columnSpecification.name,
                     type: columnSpecification.semanticType,
                     read_only: columnSpecification.readOnly,
                     sql: {
                         backing: backing,
                     },
-                };
+                });
             });
             
             _.each(working, function(table, key) {

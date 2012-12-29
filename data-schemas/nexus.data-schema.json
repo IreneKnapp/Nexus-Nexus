@@ -19,7 +19,7 @@
         }],
         "type": "uuid"
       }],
-      "columns": {},
+      "columns": [],
       "relates_to": []
     },
     "relation": {
@@ -33,14 +33,13 @@
       "template": "normal",
       "versioned": false,
       "timestamped": false,
-      "columns": {
-        "name": {
-          "type": "text"
-        },
-        "memo": {
-          "type": ["maybe", "text"]
-        }
-      }
+      "columns": [{
+        "name": "name",
+        "type": "text"
+      }, {
+        "name": "memo",
+        "type": ["maybe", "text"]
+      }]
     },
     "account": {
       "template": "normal",
@@ -83,11 +82,10 @@
     },
     "person": {
       "template": "account",
-      "columns": {
-        "password": {
-          "type": "password"
-        }
-      },
+      "columns": [{
+        "name": "password",
+        "type": "password"
+      }],
       "relates_to": [{
         "entity": "email",
         "purpose": "primary",
@@ -112,17 +110,16 @@
     "image": {
       "template": "normal",
       "extends": "content",
-      "columns": {
-        "width": {
-          "type": "integer"
-        },
-        "height": {
-          "type": "integer"
-        },
-        "data": {
-          "type": "blob"
-        }
-      },
+      "columns": [{
+        "name": "width",
+        "type": "integer"
+      }, {
+        "name": "height",
+        "type": "integer"
+      }, {
+        "name": "data",
+        "type": "blob"
+      }],
       "relates_to": [{
         "entity": "image_format",
         "purpose": null,
