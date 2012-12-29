@@ -266,6 +266,10 @@ Data.template = {
                 entityOutput.columns.push({
                     name: columnSpecification.name,
                     allNames: [columnSpecification.name],
+                    foreignNames: [{
+                        entity: entityName,
+                        name: columnSpecification.name,
+                    }],
                     type: columnSpecification.semanticType,
                     readOnly: columnSpecification.readOnly,
                     order: columnSpecification.order,
@@ -331,9 +335,7 @@ Data.template = {
         }
         
         _.each(Data._entities, function(entity) {
-            var recursiveExtends = Data._recursiveExtends(entity);
-            
-            entity.recursiveExtends = recursiveExtends;
+            entity.recursiveExtends = Data._recursiveExtends(entity);
         });
         
         _.each(sortedEntityNames, function(entityName) {
@@ -380,6 +382,10 @@ Data.template = {
                         mergedColumn.allNames =
                             _.union(column.allNames, mergedColumn.allNames);
                         
+                        mergedColumn.foreignNames =
+                            _.flatten([column.foreignNames,
+                                       mergedColumn.foreignNames], true);
+                        
                         var mergedBacking = [];
                         _.each(mergedColumn.sql.backing,
                                function(mergedItem, index)
@@ -404,12 +410,62 @@ Data.template = {
             entity.columns = mergedColumns;
         });
         
-        _.each(Data._entities, function(entity) {
+        _.each(Data._entities, function(entity, entityName) {
             _.each(entity.columns, function(column) {
                 column.readOnly = column.readOnly ? true : false;
+                
+                column.foreignNames =
+                    _.reject(column.foreignNames, function(foreignName)
+                {
+                    return foreignName.entity == entityName;
+                });
+                
                 delete column.allNames;
                 delete column.order;
                 delete column.keyIndex;
+            });
+            
+            entity.joins = [];
+            
+            _.each(entity.recursiveExtends, function(extendedEntityName) {
+                var extendedEntity = Data._entities[extendedEntityName];
+                
+                var keyColumnNames = [];
+                _.each(extendedEntity.key, function(extendedKeyColumnName) {
+                    var foundKeyColumn = false;
+                    _.each(entity.key, function(keyColumnName) {
+                        if(foundKeyColumn) return;
+                        
+                        var extendedKeyColumn;
+                        // IAK
+                        var foundExtendedKeyColumn = false;
+                        _.each(entity.columns, function(extendedColumn) {
+                            if(found) return;
+                            
+                            if(extendedColumn.name == extendedKeyColumnName) {
+                                extendedKeyColumn = extendedColumn;
+                                found = true;
+                            }
+                        });
+                        if(entity.columns
+                    });
+                    _.each(extendedKeyColumn.foreignNames,
+                           function(foreignName)
+                    {
+                        if(found) return;
+                        
+                        if(foreignName.entity == entityName) {
+                            keyColumnNames.push(foreignName.name);
+                            found = true;
+                        }
+                    });
+                });
+                
+                entity.joins.push({
+                    entity: extendedEntityName,
+                    purpose: null,
+                    columns: keyColumnNames,
+                });
             });
         });
     },
