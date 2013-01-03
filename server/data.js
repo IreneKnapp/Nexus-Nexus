@@ -431,40 +431,29 @@ Data.template = {
                 var extendedEntity = Data._entities[extendedEntityName];
                 
                 var keyColumnNames = [];
+                var foreignKeyColumnNames = [];
                 _.each(extendedEntity.key, function(extendedKeyColumnName) {
-                    var foundKeyColumn = false;
-                    _.each(entity.key, function(keyColumnName) {
-                        if(foundKeyColumn) return;
+                    var found = false;
+                    _.each(entity.columns, function(column) {
+                        if(found) return;
                         
-                        var extendedKeyColumn;
-                        // IAK
-                        var foundExtendedKeyColumn = false;
-                        _.each(entity.columns, function(extendedColumn) {
+                        _.each(column.foreignNames, function(foreignName) {
                             if(found) return;
                             
-                            if(extendedColumn.name == extendedKeyColumnName) {
-                                extendedKeyColumn = extendedColumn;
+                            if(foreignName.entity == extendedEntityName) {
+                                keyColumnNames.push(column.name);
+                                foreignKeyColumnNames.push(foreignName.name);
                                 found = true;
                             }
                         });
-                        if(entity.columns
-                    });
-                    _.each(extendedKeyColumn.foreignNames,
-                           function(foreignName)
-                    {
-                        if(found) return;
-                        
-                        if(foreignName.entity == entityName) {
-                            keyColumnNames.push(foreignName.name);
-                            found = true;
-                        }
                     });
                 });
                 
                 entity.joins.push({
                     entity: extendedEntityName,
-                    purpose: null,
+                    purpose: ["extends"],
                     columns: keyColumnNames,
+                    foreignColumns: foreignKeyColumnNames,
                 });
             });
         });
