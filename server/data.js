@@ -74,33 +74,62 @@ Data.template = {
             };
             var tables = {};
             
-            if(_.isUndefined(entity.recursiveExtends)) {
-                entity.recursiveExtends = [];
+            var relevantTemplates = [];
+            var templateName = entity.template;
+            while(!_.isNull(templateName)) {
+                var template = Data.schema.entity_templates[templateName];
+                relevantTemplates.unshift(template);
+                templateName = template.template;
             }
+            relevantTemplates.push(entity);
             
-            if(_.isUndefined(entity.columns)) {
-                entity.columns = [];
-            }
-            
-            while(!_.isNull(entity.template)) {
-                var template =
-                    Data.schema.entity_templates[entity.template];
+            entity = {
+                extends: [],
+                versioned: false,
+                timestamped: false,
+                hierarchy: null,
+                key: [],
+                columns: [],
+                relates_to: [],
+            };
+            _.each(relevantTemplates, function(template) {
+                _.each(["versioned", "timestamped", "key"],
+                       function(parameter)
+                {
+                    if(!_.isUndefined(template[parameter])) {
+                        entity[parameter] = template[parameter];
+                    }
+                });
                 
-                entity.template = template.template;
+                _.each(["extends", "columns", "relates_to"],
+                       function(parameter)
+                {
+                    if(!_.isUndefined(template[parameter])) {
+                        entity[parameter] = _.flatten
+                            ([entity[parameter], template[parameter]],
+                             true);
+                    }
+                });
                 
-                if(!_.isUndefined(template["extends"])) {
-                    entity.recursiveExtends =
-                        _.flatten([template["extends"],
-                                   entity["extends"]], true);
+                if(!_.isUndefined(template.hierarchy)) {
+                    if(_.isNull(template.hierarchy)) {
+                        entity.hierarchy = null;
+                    } else {
+                        if(_.isNull(entity.hierarchy)) {
+                            entity.hierarchy = {
+                                path_columns: [],
+                            };
+                        }
+                        
+                        if(!_.isUndefined(template.hierarchy.path_columns)) {
+                            entity.hierarchy.path_columns = _.flatten
+                                ([entity.hierarchy.path_columns,
+                                  template.hierarchy.path_columns],
+                                 true);
+                        }
+                    }
                 }
-                
-                if(!_.isUndefined(template.columns)) {
-                    entity.columns =
-                        _.flatten([entity.columns, template.columns], true);
-                }
-                
-                entity = _.defaults(entity, template);
-            }
+            });
             
             if(entity.unique_relation) {
                 if(entity.versioned) {
@@ -208,7 +237,7 @@ Data.template = {
                     subcolumns: subcolumnSpecifications,
                 });
             });
-            
+
             if(entity.timestamped) {
                 var modifiedAtTable;
                 if(entity.versioned) modifiedAtTable = "version";
@@ -236,6 +265,11 @@ Data.template = {
                             sqlType: "integer",
                         }],
                     });
+                });
+            }
+            
+            if(!_.isNull(entity.hierarchy)) {
+                _.each(entity.hierarchy.path_columns, function(column) {
                 });
             }
             
@@ -484,7 +518,7 @@ Data.template = {
                     prefix = "";
                 } else {
                     purpose = ["named", relation.purpose];
-                    prefix = purpose + "_";
+                    prefix = relation.purpose + "_";
                 }
                 
                 var keyColumnNames = [];
