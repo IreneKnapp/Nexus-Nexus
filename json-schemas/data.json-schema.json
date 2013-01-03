@@ -7,6 +7,11 @@
       "required": true,
       "extends": { "$ref": "#/definitions/uuid" }
     },
+    "version": {
+      "title": "schema version",
+      "required": true,
+      "extends": { "$ref": "#/definitions/timestamp" }
+    },
     "entity_templates": {
       "title": "entity template list",
       "required": true,
@@ -39,6 +44,12 @@
       "description": "A universally-unique identifier, expressed in its textual syntax.",
       "type": "string",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "timestamp": {
+      "title": "timestamp",
+      "description": "A point in time, expressed as a string of decimal digits and represented by a non-negative number of whole seconds in the POSIX epoch.",
+      "type": "string",
+      "pattern": "^[0-9]+$"
     },
     "type": {
       "title": "type specification",
@@ -76,7 +87,17 @@
         },
         "hierarchy": {
           "title": "entity \"hierarchy\" field",
-          "type": ["null", "object"]
+          "type": ["null", "object"],
+          "properties": {
+            "path_columns": {
+              "title": "hierarchy \"path columns\" field",
+              "type": "array",
+              "items": {
+                "title": "hierarchy \"path columns\" field item",
+                "type": "string"
+              }
+            }
+          }
         },
         "key": {
           "title": "key",

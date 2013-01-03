@@ -56,10 +56,12 @@ Data.template = {
         Data._sqlSchema = {};
         
         Data._sqlSchema.id = Data.schema.id;
+        Data._sqlSchema.version = Data.schema.version;
         Data._sqlSchema.tables = {
             schema: {
                 columns: {
-                    schema_id: { type: "uuid" }
+                    schema_id: { type: "uuid" },
+                    schema_version: { type: "timestamp" },
                 },
                 constraints: []
             },

@@ -1,6 +1,7 @@
 {
   "id": "b1a8f23b-2c5d-4c46-8a06-3ee8c095d203",
-
+  "version": "1357238210",
+  
   "entity_templates": {
     "normal": {
       "template": null,
@@ -46,6 +47,7 @@
     "hierarchical": {
       "template": "reference",
       "hierarchy": {
+        "path_columns": ["name"]
       }
     }
   },
