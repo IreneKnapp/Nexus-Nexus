@@ -32,4 +32,5 @@ To obtain sources and prepare binaries:
 
 To start the daemon:
 
-    node server/nexus.js
+    node server/main.js
+
