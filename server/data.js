@@ -336,6 +336,20 @@ Data.template = {
         
         _.each(Data._entities, function(entity) {
             entity.recursiveExtends = Data._recursiveExtends(entity);
+            entity.immediateExtendedBy = [];
+            entity.recursiveExtendedBy = [];
+        });
+        
+        _.each(Data._entities, function(entity, entityName) {
+            _.each(entity.immediateExtends, function(foreignEntityName) {
+                var foreignEntity = Data._entities[foreignEntityName];
+                foreignEntity.immediateExtendedBy.push(entityName);
+            });
+            
+            _.each(entity.recursiveExtends, function(foreignEntityName) {
+                var foreignEntity = Data._entities[foreignEntityName];
+                foreignEntity.recursiveExtendedBy.push(entityName);
+            });
         });
         
         _.each(sortedEntityNames, function(entityName) {
@@ -431,7 +445,6 @@ Data.template = {
                 var extendedEntity = Data._entities[extendedEntityName];
                 
                 var keyColumnNames = [];
-                var foreignKeyColumnNames = [];
                 _.each(extendedEntity.key, function(extendedKeyColumnName) {
                     var found = false;
                     _.each(entity.columns, function(column) {
@@ -442,7 +455,6 @@ Data.template = {
                             
                             if(foreignName.entity == extendedEntityName) {
                                 keyColumnNames.push(column.name);
-                                foreignKeyColumnNames.push(foreignName.name);
                                 found = true;
                             }
                         });
@@ -453,7 +465,71 @@ Data.template = {
                     entity: extendedEntityName,
                     purpose: ["extends"],
                     columns: keyColumnNames,
-                    foreignColumns: foreignKeyColumnNames,
+                });
+            });
+            
+            _.each(Data.schema.entities[entityName].relates_to,
+                   function(relation)
+            {
+                var entity = Data._entities[entityName];
+                 
+                var foreignEntity = Data._entities[relation.entity];
+                 
+                var purpose;
+                var prefix;
+                if(_.isNull(relation.purpose)) {
+                    purpose = ["anonymous"];
+                    prefix = "";
+                } else {
+                    purpose = ["named", relation.purpose];
+                    prefix = purpose + "_";
+                }
+                
+                var keyColumnNames = [];
+                _.each(foreignEntity.key, function(foreignKeyColumnName) {
+                    var foreignColumn;
+                    var found = false;
+                    _.each(foreignEntity.columns,
+                           function(foundForeignColumn)
+                    {
+                        if(found) return;
+
+                        if(foundForeignColumn.name == foreignKeyColumnName) {
+                            foreignColumn = foundForeignColumn;
+                            found = true;
+                        }
+                    });
+                    
+                    var columnName = prefix + foreignKeyColumnName;
+                    
+                    var backing = [];
+                    _.each(foreignColumn.sql.backing, function(backingItem) {
+                        backingItem = Data._deepCopy(backingItem);
+                        backingItem[entityName] =
+                            prefix + backingItem[relation.entity];
+                        backing.push(backingItem);
+                    });
+                    
+                    entity.columns.push({
+                        name: columnName,
+                        foreignNames: [{
+                            entity: relation.entity,
+                            name: foreignColumn.name,
+                        }],
+                        type: Data._deepCopy(foreignColumn.type),
+                        readOnly: false,
+                        sql: {
+                           backing: backing,
+                        },
+                    });
+                    
+                    keyColumnNames.push(columnName);
+                });
+                
+                entity.joins.push({
+                    entity: relation.entity,
+                    purpose: purpose,
+                    columns: keyColumnNames,
                 });
             });
         });
