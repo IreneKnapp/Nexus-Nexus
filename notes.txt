@@ -1,25 +1,28 @@
-unique_relation instead a flag on each relation,
-    but new flag "see_through" for computing direct adjacency
-        for the purposes of auto ports for "nearby" entities
++ unique_relation instead a flag on each relation,
 
-key implemented
++ key implemented
 
-extends implemented
++ extends implemented
 
-fake relational contexts for each entity
++ fake relational contexts for each entity
 
-auto ports for each entity - create, list, update, delete
+  SQL schema includes initialization SQL
 
-auto ports for "nearby" entities - list only
-    for "directly adjacent" entities only
+  auto ports for each entity - create, list, update, delete
 
-separate where, order, paging in selectors
+  Ports include SQL to perform them, in some sort of monad-like form
 
-permissions functions in the schema for each entity and row
-    full or no access to each given port
+  auto ports for "nearby" entities - list only
+      for "directly adjacent" entities only
 
-user functions list in side-along file to schema
+  separate where, order, paging in selectors
 
-manual duplicate ports for differing permissions
+  permissions functions in the schema for each entity and row
+      full or no access to each given port
 
-static files ports - css, js, img, html
+  user functions list in side-along file to schema
+
+  manual duplicate ports for differing permissions
+
+  static files ports - css, js, img, html
+
